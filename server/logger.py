@@ -16,7 +16,11 @@ def init_db():
                         ip TEXT NOT NULL,
                         username TEXT NOT NULL,
                         password TEXT NOT NULL,
-                        timestamp TEXT NOT NULL
+                        timestamp TEXT NOT NULL,
+                        country TEXT,
+                        city TEXT,
+                        lat REAL,
+                        lon REAL
                     )
     ''')
     
@@ -33,15 +37,15 @@ def init_db():
     conn.commit()
     conn.close()
     
-def log_attempt(ip, username, password):
+def log_attempt(ip, username, password, country=None, city=None, lat=None, lon=None):
     # Guarda un intento de login en la base de datos
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     
     cursor.execute(
-        'INSERT INTO auth_attempts (ip, username, password, timestamp) VALUES (?, ?, ?, ?)',
-        (ip, username, password, timestamp)
+        'INSERT INTO auth_attempts (ip, username, password, timestamp, country, city, lat, lon) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        (ip, username, password, timestamp, country, city, lat, lon)
     )
     
     conn.commit()

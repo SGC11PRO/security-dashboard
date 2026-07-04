@@ -1,9 +1,12 @@
 import sys
+import json
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
+
+from geolocation import geolocate_ip
 
 # Añadimos la raíz del proyecto al path para poder importar server.logger.
 ROOT_DIR = Path(__file__).resolve().parents[1]
@@ -15,6 +18,8 @@ from server.logger import get_all_attempts, get_all_commands, init_db, log_attem
 
 app = FastAPI()
 
+connected_clients = [] # Lista para almacenar los WebSockets conectados
+
 class Event(BaseModel):
     type: str
     ip: Optional[str] = None
@@ -22,6 +27,11 @@ class Event(BaseModel):
     password: Optional[str] = None
     attempt_id: Optional[int] = None
     command: Optional[str] = None
+    
+    
+async def broadcast(data: dict):
+    for client in connected_clients:
+        await client.send_text(json.dumps(data))
 
 @app.on_event("startup")
 def startup_event():
@@ -30,9 +40,16 @@ def startup_event():
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    while True:
-        data = await websocket.receive_text()
-        await websocket.send_text(f"Mensaje recibido: {data}")
+    connected_clients.append(websocket)
+    print (f"[WS] Cliente conectado: {websocket.client}. Total: {len(connected_clients)}")
+    
+    try: 
+        while True:
+            await websocket.receive_text()  # Esperamos a recibir mensajes, aunque no los usemos
+    
+    except WebSocketDisconnect:
+        connected_clients.remove(websocket)
+        print (f"[WS] Cliente desconectado: {websocket.client}. Total: {len(connected_clients)}")
 
 @app.get('/health')
 def health_check():
@@ -47,17 +64,27 @@ def commands():
     return get_all_commands()
 
 @app.post('/events')
-def create_event(event: Event):
+async def create_event(event: Event):
     if event.type == 'login':
-        if not all([event.ip, event.username, event.password]):
-            raise HTTPException(status_code=400, detail='ip, username y password son obligatorios para login')
-        attempt_id = log_attempt(event.ip, event.username, event.password)
-        return {'attempt_id': attempt_id}
-
-    if event.type == 'command':
-        if event.attempt_id is None or not event.command:
-            raise HTTPException(status_code=400, detail='attempt_id y command son obligatorios para command')
+        geo = geolocate_ip(event.ip)
+        attempt_id = log_attempt(event.ip, event.username, event.password, geo['country'], geo['city'], geo['lat'], geo['lon'])
+        await broadcast({
+            "type": "login",
+            "ip": event.ip,
+            "username": event.username,
+            "password": event.password,
+            "attempt_id": attempt_id,
+            **geo
+        })
+        
+        return {"attempt_id": attempt_id}
+    
+    elif event.type == 'command':
         log_command(event.attempt_id, event.command)
-        return {'status': 'ok'}
-
-    raise HTTPException(status_code=400, detail='tipo de evento no soportado')
+        await broadcast({
+            "type": "command",
+            "attempt_id": event.attempt_id,
+            "command": event.command
+        })
+        
+        return {"status": "ok"}
