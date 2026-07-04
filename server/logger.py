@@ -62,3 +62,39 @@ def log_command(attempt_id, command):
     
     conn.commit()
     conn.close()
+    
+def get_all_attempts(limit = 100):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # Esto permite acceder a las columnas por nombre
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        'SELECT * FROM auth_attempts ORDER BY id DESC LIMIT ?',
+        (limit,)
+    )
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]  # Convertimos cada fila a un diccionario
+
+def get_all_commands (limit = 100):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row  # Esto permite acceder a las columnas por nombre
+    cursor = conn.cursor()
+    
+    cursor.execute(
+        '''
+        SELECT commands.id, commands.command, commands.timestamp, auth_attempts.ip, auth_attempts.username
+        FROM commands
+        JOIN auth_attempts ON commands.attempt_id = auth_attempts.id
+        ORDER BY commands.id DESC
+        LIMIT ?
+        ''',
+        (limit,)
+    )
+    
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]  # Convertimos cada fila a un diccionario
