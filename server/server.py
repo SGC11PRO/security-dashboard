@@ -1,6 +1,8 @@
 import paramiko
 import socket 
 import threading
+import requests
+
 from pathlib import Path
 
 from logger import init_db, log_attempt, log_command
@@ -19,6 +21,7 @@ COMMON_CREDS = {
 
 BASE_DIR = Path(__file__).resolve().parent
 SERVER_KEY_PATH = BASE_DIR / 'server.key'
+BACKEND_URL = 'http://localhost:8000'
 
 
 def get_or_create_server_key():
@@ -40,8 +43,17 @@ class Server(paramiko.ServerInterface):
     def check_auth_password(self, username, password):
         # Aquí capturamos el usuario/contraseña probados
         print (f"[+] Intento de autenticación desde {self.client_ip} con usuario: {username} y contraseña: {password}")
-        self.attempt_id = log_attempt(self.client_ip, username, password)  # Guardamos el intento en la base de datos
         
+        # Guardamos el intento en la base de datos a través del backend
+        response = requests.post(f"{BACKEND_URL}/events", json={
+            "type": "login",
+            "ip": self.client_ip,
+            "username": username,
+            "password": password
+        })
+        
+        self.attempt_id = response.json().get('attempt_id')
+
         # Comparamos credenciales
         if (username, password) in COMMON_CREDS:
             return paramiko.AUTH_SUCCESSFUL
@@ -89,7 +101,12 @@ def fake_shell(channel, attempt_id):
                 continue
             
             print (f"[CMD] {command}")
-            log_command(attempt_id, command)  # Guardamos el comando en la base de datos
+            # Guardamos el comando en la base de datos a través del backend
+            requests.post(f"{BACKEND_URL}/events", json={
+                "type": "command",
+                "attempt_id": attempt_id,
+                "command": command
+            })
             
             if command in ('exit', 'logout'):
                 channel.send(b'logout\r\n')
@@ -152,5 +169,4 @@ def start_server(host = '0.0.0.0', port = 2222):
         
 
 if __name__ == "__main__":
-    init_db()  # Inicializamos la base de datos
     start_server()
