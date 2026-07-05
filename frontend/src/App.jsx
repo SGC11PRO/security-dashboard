@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import 'leaflet/dist/leaflet.css';
 import AttackMap from './components/AttackMap';
 import LiveFeed from './components/LiveFeed';
@@ -11,36 +11,12 @@ function App() {
   const [connected, setConnected] = useState(false);
   const reconnectTimeout = useRef(null);
 
-  const connect = useCallback(() => {
-    const ws = new WebSocket('ws://localhost:8000/ws');
-
-    ws.onopen = () => setConnected(true);
-
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data.type === 'login') {
-        setAttempts((prev) => [data, ...prev]);
-      } else if (data.type === 'command') {
-        setCommands((prev) => [data, ...prev]);
-      }
-    };
-
-    ws.onclose = () => {
-      setConnected(false);
-      reconnectTimeout.current = setTimeout(connect, 3000);
-    };
-
-    ws.onerror = () => ws.close();
-
-    return ws;
-  }, []);
-
   useEffect(() => {
     let active = true;
     let ws;
 
     const connect = () => {
-      ws = new WebSocket('ws://localhost:8000/ws');
+      ws = new WebSocket('ws://bore.pub:2205/ws');
 
       ws.onopen = () => {
         if (active) setConnected(true);
