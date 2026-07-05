@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# node.js
+.node_modules/
+
+# sensible information
+server.key
+db/*.db

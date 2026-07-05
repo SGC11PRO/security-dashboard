@@ -1,0 +1,53 @@
+name: Honeypot Demo
+
+on:
+  workflow_dispatch:  # Lanazamiento manual desde github actions
+
+jobs:
+  run-honeypot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340  # limite de tiempo de ejecución del job (5.5 horas)
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Start backend
+        run: |
+          cd backend
+          nohup uvicorn main:app --host 0.0.0.0 --port 8000 > backend.log 2>&1 &
+
+      - name: Start honeypot
+        run: |
+          cd server
+          nohup python server.py > honeypot.log 2>&1 &
+
+      - name: Wait for services
+        run: sleep 5
+
+      - name: Install bore
+        run: |
+          curl -L https://github.com/ekzhang/bore/releases/download/v0.5.0/bore-v0.5.0-x86_64-unknown-linux-musl.tar.gz | tar -xz
+
+      - name: Expose honeypot (port 2222)
+        run: |
+          nohup ./bore local 2222 --to bore.pub > tunnel_ssh.log 2>&1 &
+          sleep 3
+          cat tunnel_ssh.log
+
+      - name: Expose backend (port 8000)
+        run: |
+          nohup ./bore local 8000 --to bore.pub > tunnel_api.log 2>&1 &
+          sleep 3
+          cat tunnel_api.log
+
+      - name: Keep alive
+        run: sleep 19800  # ~5.5 horas
