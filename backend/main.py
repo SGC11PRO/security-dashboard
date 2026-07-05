@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from geolocation import geolocate_ip
@@ -17,6 +18,12 @@ from server.logger import get_all_attempts, get_all_commands, init_db, log_attem
 
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 connected_clients = [] # Lista para almacenar los WebSockets conectados
 

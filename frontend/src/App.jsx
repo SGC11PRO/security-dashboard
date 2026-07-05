@@ -11,6 +11,19 @@ function App() {
   const [connected, setConnected] = useState(false);
   const reconnectTimeout = useRef(null);
 
+  // Cargar datos anteriores desde .db
+  useEffect(() => {
+    const BACKEND_HTTP = 'http://bore.pub:14726';
+
+    fetch(`${BACKEND_HTTP}/attempts`)
+      .then(res => res.json())
+      .then(data => setAttempts(data));
+
+    fetch(`${BACKEND_HTTP}/commands`)
+      .then(res => res.json())
+      .then(data => setCommands(data));
+  }, []);
+
   useEffect(() => {
     let active = true;
     let ws;
