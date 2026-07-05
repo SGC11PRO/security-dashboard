@@ -6,6 +6,8 @@ from datetime import datetime
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DB_PATH = os.path.join(BASE_DIR, '..', 'db', 'server.db')
 
+os.makedirs(os.path.dirname(DB_PATH), exist_ok=True) # Asegura que la carpeta de la base de datos exista
+
 def init_db():
     # Crea la base de datos si no existe. Se llama una vez al iniciar el servidor
     conn = sqlite3.connect(DB_PATH)
