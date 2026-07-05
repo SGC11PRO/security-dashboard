@@ -2,10 +2,9 @@ import paramiko
 import socket 
 import threading
 import requests
+import re
 
 from pathlib import Path
-
-from logger import init_db, log_attempt, log_command
 
 # Definimos qué hace nuestro servidor cuando alguien intenta
 # - autenticarse con usuario/contraseña
@@ -77,6 +76,17 @@ class Server(paramiko.ServerInterface):
         self.event.set()
         return True
 
+def send_command_event(attempt_id, command):
+    """Envía un comando capturado al backend, sin tumbar la shell si el backend falla."""
+    try:
+        requests.post(f"{BACKEND_URL}/events", json={
+            "type": "command",
+            "attempt_id": attempt_id,
+            "command": command
+        }, timeout=3)
+    except requests.RequestException as e:
+        print(f"[!] No se pudo enviar el comando al backend: {e}")
+
 def fake_shell(channel, attempt_id):
     channel.send(b'Welcome to Ubuntu 22.04 LTS (GNU/Linux 5.15.0-1051-azure x86_64)\r\n')
     prompt = b'root@server:~# '
@@ -87,34 +97,32 @@ def fake_shell(channel, attempt_id):
         data = channel.recv(1024)
         if not data:
             break
-        
+
         # Imprimimos lo que el atacante escribe en la shell
         channel.send(data)
         buffer += data
-        
-        if b'\r' in buffer or b'\n' in buffer:
-            command = buffer.strip().decode('utf-8')
-            buffer = b''
-            
+
+        # Procesamos TODOS los comandos completos que haya en el buffer,
+        # por si llegan varios pegados en un mismo recv() (típico de bots)
+        while b'\r' in buffer or b'\n' in buffer:
+            line, buffer = re.split(rb'\r\n|\r|\n', buffer, maxsplit=1)
+            command = line.strip().decode('utf-8', errors='ignore')
+
             if command == '':
                 channel.send(b'\r\n' + prompt)
                 continue
-            
-            print (f"[CMD] {command}")
-            # Guardamos el comando en la base de datos a través del backend
-            requests.post(f"{BACKEND_URL}/events", json={
-                "type": "command",
-                "attempt_id": attempt_id,
-                "command": command
-            })
-            
+
+            print(f"[CMD] {command}")
+            send_command_event(attempt_id, command)
+
             if command in ('exit', 'logout'):
-                channel.send(b'logout\r\n')
-                break
-            
+                channel.send(b'\r\nlogout\r\n')
+                channel.close()
+                return
+
             response = fake_command_response(command)
             channel.send(b'\r\n' + response + b'\r\n' + prompt)
-            
+
     channel.close()
     
 def fake_command_response(command):
