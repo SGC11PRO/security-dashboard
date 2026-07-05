@@ -13,7 +13,7 @@ function App() {
 
   // Cargar datos anteriores desde .db
   useEffect(() => {
-    const BACKEND_HTTP = 'http://bore.pub:14726';
+    const BACKEND_HTTP = 'http://bore.pub:50468';
 
     fetch(`${BACKEND_HTTP}/attempts`)
       .then(res => res.json())
@@ -29,7 +29,7 @@ function App() {
     let ws;
 
     const connect = () => {
-      ws = new WebSocket('ws://bore.pub:14726/ws');
+      ws = new WebSocket('ws://bore.pub:50468/ws');
 
       ws.onopen = () => {
         if (active) setConnected(true);
@@ -75,7 +75,7 @@ function App() {
           <span className={connected ? 'tag status-live' : 'tag status-offline'}>
             {connected ? 'Live' : 'Reconnecting…'}
           </span>
-          <span className="tag">Port 2222</span>
+          <span className="tag">Port 50468</span>
           <span className="tag">{attempts.length} attempts</span>
         </div>
       </div>
