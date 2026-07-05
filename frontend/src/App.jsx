@@ -16,7 +16,7 @@ function App() {
     let ws;
 
     const connect = () => {
-      ws = new WebSocket('ws://bore.pub:2205/ws');
+      ws = new WebSocket('ws://bore.pub:14726/ws');
 
       ws.onopen = () => {
         if (active) setConnected(true);

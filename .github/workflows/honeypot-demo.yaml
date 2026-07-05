@@ -51,3 +51,13 @@ jobs:
 
       - name: Keep alive
         run: sleep 19800  # ~5.5 horas
+
+      - name: Keep alive
+        run: sleep 19800
+
+      - name: Upload database as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: honeypot-database
+          path: db/server.db
