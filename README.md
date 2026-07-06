@@ -2,8 +2,6 @@
 
 Panel de monitorización en tiempo real para un honeypot SSH: un servidor SSH falso que captura credenciales y comandos de atacantes (bots y humanos) que intentan acceder a él, y los visualiza en vivo en un dashboard web.
 
-> Proyecto personal desarrollado como preparación para el Grado en Ingeniería Informática (UC3M, especialización en ciberseguridad), verano 2026.
-
 ## Qué hace
 
 - Simula un servidor SSH real en un puerto expuesto a internet
@@ -38,10 +36,6 @@ El honeypot y el backend están deliberadamente separados: el honeypot **nunca**
 | Frontend | React + Vite, react-leaflet (mapa), Recharts (gráficas), lucide-react (iconos) |
 | Infra de demo | GitHub Actions + [bore.pub](https://bore.pub/) (túnel TCP) |
 
-## Capturas
-
-*(añadir aquí capturas del dashboard en funcionamiento, idealmente con tráfico real capturado)*
-
 ## Cómo ejecutarlo en local
 
 Requiere Python 3.11+, Node.js 18+, y un cliente SSH para probar el honeypot.
@@ -72,7 +66,7 @@ Cualquier usuario/contraseña queda registrado. Probando `admin/admin`, `root/ro
 
 ## Cómo se probó con tráfico real
 
-Sin disponer todavía de una VPS propia, el proyecto se expuso temporalmente a internet usando GitHub Actions como entorno de ejecución y [bore.pub](https://bore.pub/) para abrir un túnel TCP público hacia los puertos del honeypot y del backend. Esto permitió capturar durante varias horas intentos de conexión reales de bots que escanean internet automáticamente en busca de servidores SSH mal protegidos — sin necesidad de contratar infraestructura de pago.
+Sin disponer todavía de una VPS propia, el proyecto se expuso temporalmente a internet usando GitHub Actions como entorno de ejecución y [bore.pub](https://bore.pub/) para abrir un túnel TCP público hacia los puertos del honeypot y del backend. Esto permitió capturar durante varias horas intentos de conexión reales de bots que escanean internet automáticamente en busca de servidores SSH mal protegidos.
 
 ## Decisiones de diseño relevantes
 
