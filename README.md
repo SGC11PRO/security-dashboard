@@ -1,3 +1,5 @@
+![Screenshot](image.png)
+
 # SSH Honeypot Dashboard
 
 Panel de monitorización en tiempo real para un honeypot SSH: un servidor SSH falso que captura credenciales y comandos de atacantes (bots y humanos) que intentan acceder a él, y los visualiza en vivo en un dashboard web.
